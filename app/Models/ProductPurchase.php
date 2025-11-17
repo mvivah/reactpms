@@ -8,19 +8,15 @@ class ProductPurchase extends Model
 {
     protected $fillable = [
         'product_id',
-        'receipt_id',
-        'invoice_id',
         'purchase_id',
-        'supplier_id',
-        'batch_number',
-        'expiry_date',
+        'batch_id',
         'received_quantity',
-        'available_quantity',
         'purchase_price',
-        'selling_price',
-        'unit_purchase_price',
-        'unit_selling_price',
-        'created_by',
-        'updated_by',
     ];
+    public function product(){
+        return $this->belongsTo(Product::class);
+    }
+    public function batch(){
+        return $this->belongsTo(Batch::class);
+    }
 }

@@ -4,62 +4,74 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class BrandController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        if (Gate::allows('owner-access')) {
+            return Inertia::render('Brands/Index', [
+                'brands' => Brand::all()
+            ]);
+        }
+        abort(403, 'Access to this resource is restricted.');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('Brands/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        try {
+            $data = $request->validate([
+                'name' => 'required',
+                'description' => 'required',
+                'brand_id' => 'nullable',
+            ]);
+
+            if (isset($data['brand_id'])) {
+                $brand = Brand::find($data['brand_id']);
+                $brand->name = $data['name'];
+                $brand->description = $data['description'];
+                $brand->save();
+
+                return back()->with('success', 'Brand updated successfully');
+            }
+
+            $brand = new Brand();
+            $brand->name = $data['name'];
+            $brand->description = $data['description'];
+            $brand->save();
+
+            return redirect()->route('brands.index')->with('success', 'Brand saved successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Brand $brand)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Brand $brand)
     {
-        //
+        return Inertia::render('Brands/Create', [
+            'brand' => $brand
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Brand $brand)
+    public function list()
     {
-        //
+        return response()->json(Brand::all());
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Brand $brand)
     {
-        //
+        try {
+            $brand->delete();
+            return back()->with('success', 'Brand deleted successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

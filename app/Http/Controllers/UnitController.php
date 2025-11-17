@@ -4,62 +4,74 @@ namespace App\Http\Controllers;
 
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class UnitController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        if (Gate::allows('owner-access')) {
+            return Inertia::render('Units/Index', [
+                'units' => Unit::all()
+            ]);
+        }
+        abort(403, 'Access to this resource is restricted.');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('Units/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        try {
+            $data = $request->validate([
+                'name' => 'required',
+                'abbreviation' => 'required',
+                'unit_id' => 'nullable',
+            ]);
+
+            if (isset($data['unit_id'])) {
+                $unit = Unit::find($data['unit_id']);
+                $unit->name = $data['name'];
+                $unit->abbreviation = $data['abbreviation'];
+                $unit->save();
+
+                return back()->with('success', 'Unit updated successfully');
+            }
+
+            $unit = new Unit();
+            $unit->name = $data['name'];
+            $unit->abbreviation = $data['abbreviation'];
+            $unit->save();
+
+            return redirect()->route('units.index')->with('success', 'Unit saved successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Unit $unit)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Unit $unit)
     {
-        //
+        return Inertia::render('Units/Create', [
+            'unit' => $unit
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Unit $unit)
+    public function list()
     {
-        //
+        return response()->json(Unit::all());
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Unit $unit)
     {
-        //
+        try {
+            $unit->delete();
+            return back()->with('success', 'Unit deleted successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

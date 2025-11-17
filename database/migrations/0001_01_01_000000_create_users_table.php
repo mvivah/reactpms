@@ -13,10 +13,18 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('staff_id')->unique()->nullable();
+            $table->string('firstname');
+			$table->string('lastname');
+			$table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->date('birthdate')->nullable();
+            $table->string('gender')->nullable();
+            $table->string('avatar')->nullable();
+            $table->string('phone_number')->nullable();
+			$table->foreignId('role_id');
+			$table->boolean('status')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });
@@ -35,6 +43,30 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+        //insert default user
+        DB::table('users')->insert(
+            array([
+            'staff_id' => '00000001',
+            'firstname' => 'Owner',
+            'lastname' => 'Account',
+            'email' => 'owner@avante.com',
+            'password' => bcrypt('m!p@ssW0rd'),
+            'role_id' => 1,
+            'status' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],[
+            'staff_id' => '00000002',
+            'firstname' => 'Cashier',
+            'lastname' => 'Account',
+            'email' => 'cashier@avante.com',
+            'password' => bcrypt('m!p@ssW0rd'),
+            'role_id' => 2,
+            'status' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])
+        );
     }
 
     /**

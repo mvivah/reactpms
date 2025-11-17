@@ -4,62 +4,85 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class SupplierController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        if (Gate::allows('owner-access')) {
+            return Inertia::render('Suppliers/Index', [
+                'suppliers' => Supplier::all()
+            ]);
+        }
+        abort(403, 'Access to this resource is restricted.');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('Suppliers/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        try {
+            $data = $request->validate([
+                'name' => 'required',
+                'email' => 'required|email',
+                'phone' => 'required',
+                'address' => 'nullable',
+                'supplier_id' => 'nullable',
+            ]);
+
+            if (isset($data['supplier_id'])) {
+                $supplier = Supplier::find($data['supplier_id']);
+                $supplier->fill($data);
+                $supplier->save();
+
+                return back()->with('success', 'Supplier updated successfully');
+            }
+
+            Supplier::create($data);
+
+            return redirect()->route('suppliers.index')->with('success', 'Supplier saved successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Supplier $supplier)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Supplier $supplier)
     {
-        //
+        return Inertia::render('Suppliers/Create', [
+            'supplier' => $supplier
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Supplier $supplier)
+    public function list()
     {
-        //
+        return response()->json(Supplier::all());
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    public function updateActiveStatus(Request $request)
+    {
+        try {
+            $supplier = Supplier::find($request->supplier_id);
+            $supplier->status = $request->status;
+            $supplier->save();
+
+            return back()->with('success', 'Supplier status updated successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
     public function destroy(Supplier $supplier)
     {
-        //
+        try {
+            $supplier->delete();
+            return back()->with('success', 'Supplier deleted successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }
